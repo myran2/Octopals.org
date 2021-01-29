@@ -8,9 +8,14 @@ if ($bossId == false || $bossId == NULL) {
     die ("No boss Id specified.");
 }
 
-if (!array_key_exists($bossId, $bossIdToName)) {
-    die("Invalid boss Id: ". $bossId);
-}
+$sql = "SELECT `name` FROM encounter WHERE encounter_id = ?";
+$stmt = $dbConn->prepare($sql);
+$stmt->execute([$bossId]);
+$result = $stmt->setFetchMode(PDO::FETCH_ASSOC);
+$data = $stmt->fetch();
+if ($data == false)
+    die("Invalid boss Id.");
+$bossName = $data["name"];
 
 $sql = "SELECT `name`, playerClass, playerRoles FROM raider WHERE blizz_id = ?";
 $stmt = $dbConn->prepare($sql);
@@ -24,7 +29,7 @@ $playerName = $data["name"];
 $classMask = $classIdToClassMask[$data["playerClass"]];
 
 // previous loot needs
-$sql = "SELECT bl.item_id, bonus_id, raider_id, response FROM (SELECT * from boss_loot WHERE boss_id = ? AND class_mask & ? = ?) AS bl left JOIN (SELECT * from raider_loot where raider_id = ?) as rl on rl.item_id = bl.item_id";
+$sql = "SELECT bl.item_id, bonus_id, raider_id, response FROM (SELECT * from encounter_loot WHERE encounter_id = ? AND class_mask & ? = ?) AS bl left JOIN (SELECT * from raider_loot where raider_id = ?) as rl on rl.item_id = bl.item_id";
 $stmt = $dbConn->prepare($sql);
 $stmt->execute([$bossId, $classMask, $classMask, $blizzId]);
 $result = $stmt->setFetchMode(PDO::FETCH_ASSOC);
@@ -34,7 +39,7 @@ $data = $stmt->fetchAll();
 ?>
 <html lang="en">
     <head>
-        <title><?php echo $playerName . "'s loot needs for ". $bossIdToName[$bossId]; ?></title>
+        <title><?php echo $playerName . " - ". $bossName; ?></title>
         <meta charset="utf-8">
         <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.15.5/dist/bootstrap-table.min.css">
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
@@ -49,7 +54,7 @@ $data = $stmt->fetchAll();
 
     <body class="bg-dark">
         <div class="container">
-            <h1 class="text-light"><?php echo $playerName . "'s loot needs for ". $bossIdToName[$bossId]; ?></h1>
+            <h1 class="text-light"><?php echo $playerName . "'s loot needs for ". $bossName; ?></h1>
             <form id="lootNeeds" method="post">
                 <div class="row">
                     <div class="col">

@@ -7,6 +7,12 @@ $stmt = $dbConn->prepare($sql);
 $stmt->execute();
 $result = $stmt->setFetchMode(PDO::FETCH_ASSOC);
 $raiderResponses = $stmt->fetchAll();
+
+$sql = "SELECT * FROM encounter ORDER BY `order`";
+$stmt = $dbConn->prepare($sql);
+$stmt->execute();
+$result = $stmt->setFetchMode(PDO::FETCH_ASSOC);
+$encounters = $stmt->fetchAll();
 ?>
 
 <html lang="en">
@@ -73,18 +79,12 @@ $raiderResponses = $stmt->fetchAll();
             <thead class="thead-dark">
                 <tr>
                     <th data-sortable="true" data-field="name">Name</th>
-                    <th data-sortable="true" data-field="boss1">Wrathion</th>
-                    <th data-sortable="true" data-field="boss2">Skitra</th>
-                    <th data-sortable="true" data-field="boss3">Maut</th>
-                    <th data-sortable="true" data-field="boss4">Xanesh</th>
-                    <th data-sortable="true" data-field="boss5">Hivemind</th>
-                    <th data-sortable="true" data-field="boss6">Shad'har</th>
-                    <th data-sortable="true" data-field="boss7">Drest'agath</th>
-                    <th data-sortable="true" data-field="boss8">Il'gynoth</th>
-                    <th data-sortable="true" data-field="boss9">Vexiona</th>
-                    <th data-sortable="true" data-field="boss10">Ra-den</th>
-                    <th data-sortable="true" data-field="boss11">Carapace</th>
-                    <th data-sortable="true" data-field="boss12">N'Zoth</th>
+                    <?php
+                        $bossIndex = 1;
+                        foreach($encounters as $e) {
+                            echo "<th data-sortable=\"true\" data-field=\"boss". $e["order"] ."\">". $e["name"] ."</th>\n";
+                        }
+                    ?>
                 </tr>
             </thead>
             <tbody>
@@ -92,7 +92,15 @@ $raiderResponses = $stmt->fetchAll();
                     foreach($raiderResponses as $row) {
                         echo "<tr id='". $row["name"] ."'>\n";
                         echo "<td><span class=\"text-light\"><img src='img/".$row["playerClass"].".png'> ".$row["name"]."</span></td>\n";
-                        $sql = "SELECT encounter_id, min(response) as response FROM raider_loot WHERE raider_id = ? AND response < ? GROUP BY encounter_id";
+                        $sql = "SELECT 
+                                    e.encounter_id, min(response) as response 
+                                FROM 
+                                    (SELECT encounter_id, `order` FROM encounter) AS e
+                                        LEFT JOIN 
+                                    raider_loot
+                                        ON e.encounter_id = raider_loot.encounter_id 
+                                GROUP BY e.encounter_id
+                                ORDER BY e.`order`";
                         $stmt = $dbConn->prepare($sql);
                         $stmt->execute([$row["blizz_id"], LootResponse::DontNeed]);
                         $result = $stmt->setFetchMode(PDO::FETCH_ASSOC);
@@ -105,7 +113,7 @@ $raiderResponses = $stmt->fetchAll();
                                 else if ($r["response"] == LootResponse::Offspec)
                                     $symbol = "⚠️";
                             }
-                            echo "<td><a href='boss.php?blizzId=". $row["blizz_id"] ."&bossId=". $r["boss_id"] ."' data-toggle='lightbox' data-gallery='remoteload' data-disable-external-check='true' data-width='800'>". $symbol ."</a></td>\n";
+                            echo "<td><a href='boss.php?blizzId=". $row["blizz_id"] ."&bossId=". $r["encounter_id"] ."' data-toggle='lightbox' data-gallery='remoteload' data-disable-external-check='true' data-width='800'>". $symbol ."</a></td>\n";
                         }
                         echo "</tr>\n";
                     }
