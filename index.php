@@ -1,58 +1,55 @@
 <?php
 require "database.php";
-include "constants.php";
+require "constants.php";
 
-// make date/time string for most recent server reset (tuesday at 11am)
-date_default_timezone_set('America/Chicago');
-$date = new DateTime();
-$date->modify('this week +1 days');
-$date->setTime(11, 0);
-if ($date > new DateTime())
-{
-    $date->modify('last week +1 days');
-    $date->setTime(11, 0);
-}
-$mostRecentServerReset = $date->format('Y-m-d H:i:s');
-
-$sql = "SELECT r.name, r.playerclass, rh.neck_level, rh.cape_level, rkh.key_level, rkh.dungeon, rh.timestamp
-FROM raider_history AS rh
-JOIN(
-	SELECT raider_id, MAX(`timestamp`) AS ts
-	FROM raider_history
-	GROUP BY raider_id) t ON t.raider_id = rh.raider_id AND t.ts = rh.`timestamp`
-JOIN (
-	SELECT blizz_id, `name`, playerClass
-	FROM raider ) r ON r.blizz_id = rh.raider_id
-left JOIN (
-	SELECT rkht.raider_id, rkht.key_level, rkht.dungeon
-	FROM raider_key_history as rkht
-	JOIN (
-		SELECT raider_id, MAX(`timestamp`) AS ts2
-		FROM raider_key_history WHERE `timestamp` > '". $mostRecentServerReset ."'
-		GROUP BY raider_id) t2 ON t2.raider_id = rkht.raider_id AND t2.ts2 = rkht.`timestamp`
-	) rkh ON rkh.raider_id = r.blizz_id
-	";
+$sql = "SELECT blizz_id, `name`, playerClass, playerRoles FROM raider";
 $stmt = $dbConn->prepare($sql);
 $stmt->execute();
 $result = $stmt->setFetchMode(PDO::FETCH_ASSOC);
-$data = $stmt->fetchAll();
+$raiderResponses = $stmt->fetchAll();
 ?>
 
-<!doctype html>
 <html lang="en">
     <head>
-        <title>Octopals Roster</title>
+        <title>Octopals Loot Needs</title>
         <meta charset="utf-8">
         <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.16.0/dist/bootstrap-table.min.css">
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
-        <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ekko-lightbox/5.3.0/ekko-lightbox.css">
+        <script src="https://code.jquery.com/jquery-3.5.0.min.js" integrity="sha256-xNzN2a4ltkB44Mc/Jz3pT4iU1cmeR0FkXs4pru/JxaQ=" crossorigin="anonymous"></script>
         <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
         <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
         <script src="https://unpkg.com/bootstrap-table@1.16.0/dist/bootstrap-table.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/ekko-lightbox/5.3.0/ekko-lightbox.min.js"></script>
+        <script src="/js/bootstrap-table-sticky-header.js"></script>
+        <style>
+            .bootstrap-table .fixed-table-container .fixed-table-body {
+                height: max-content;
+            }
+
+            .toast {
+                left: 50%;
+                position: fixed;
+                transform: translate(-50%, 0px);
+                z-index: 9999;
+            }
+
+            .fix-sticky {
+                position: fixed !important;
+                overflow: hidden;
+                z-index: 100;
+            }
+        </style>
     </head>
 
     <body class="bg-dark">
-        <nav class="navbar navbar-dark navbar-expand-lg">
+        <div id="successToast" class="toast sticky-top" data-delay=2000>
+            <div class="toast-header">
+            <strong class="mr-auto">Loot Preferences Saved</strong>
+            </div>
+        </div>
+
+        <nav class="navbar navbar-dark navbar-expand-lg navbar-light">
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -60,87 +57,135 @@ $data = $stmt->fetchAll();
                 <img src="img/pal.png" width="30" height="30" class="d-inline-block align-top" alt="">
                 Octopals
             </a>
-            <div class="collapse navbar-collapse text-dark" id="navbarNavAltMarkup">
+            <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
               <div class="navbar-nav">
-                <a class="nav-item nav-link" href="#">Home</a>
-                <a class="nav-item nav-link active" href="#">Roster</a>
-                <a class="nav-item nav-link" href="loot.php">Loot</a>
+                <a class="nav-item nav-link" href="/index.php">Home</a>
+                <a class="nav-item nav-link" href="/index.php">Roster</a>
+                <a class="nav-item nav-link active" href="#">Loot</a>
               </div>
             </div>
         </nav>
+
+        <h1 class="text-light">Loot Needs</h1>
         <div class="bg-dark">
-            <h1 class="text-light">Roster Audit</h1>
-            <table data-toggle="table" class="table table-dark table-striped table-bordered" data-custom-sort="customSort">
-                <caption>Data is updated every day at 2am EST.</caption>
-                <thead class="thead-dark">
-                    <tr>
-                        <th data-field="name" data-sortable="true">Name</th>
-                        <th data-field="neck-level" data-sortable="true" data-order="desc">Neck Level</th>
-                        <th data-field="cape-level" data-sortable="true" data-order="desc">Cape Level</th>
-                        <th data-field="weekly-key" data-sortable="true" data-order="desc">Highest Weekly Key</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php
-                        foreach($data as $row) {
-                            $weeklyKey = ":(";
-                            if (!is_null($row["key_level"]))
-                            {
-                                if (!array_key_exists($row["dungeon"], $dungeonIdToName))
-                                {
-                                    $weeklyKey = $row["key_level"]." ?(".$row["dungeon"].")";
-                                }
-                                else 
-                                {
-                                    $weeklyKey = $row["key_level"]." ".$dungeonIdToName[$row["dungeon"]];
-                                }
+        <table data-toggle="table" class="table table-dark table-striped table-bordered" data-custom-sort="customSort" data-sticky-header="true">
+            <caption>:)</caption>
+            <thead class="thead-dark">
+                <tr>
+                    <th data-sortable="true" data-field="name">Name</th>
+                    <th data-sortable="true" data-field="boss1">Wrathion</th>
+                    <th data-sortable="true" data-field="boss2">Skitra</th>
+                    <th data-sortable="true" data-field="boss3">Maut</th>
+                    <th data-sortable="true" data-field="boss4">Xanesh</th>
+                    <th data-sortable="true" data-field="boss5">Hivemind</th>
+                    <th data-sortable="true" data-field="boss6">Shad'har</th>
+                    <th data-sortable="true" data-field="boss7">Drest'agath</th>
+                    <th data-sortable="true" data-field="boss8">Il'gynoth</th>
+                    <th data-sortable="true" data-field="boss9">Vexiona</th>
+                    <th data-sortable="true" data-field="boss10">Ra-den</th>
+                    <th data-sortable="true" data-field="boss11">Carapace</th>
+                    <th data-sortable="true" data-field="boss12">N'Zoth</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php
+                    foreach($raiderResponses as $row) {
+                        echo "<tr id='". $row["name"] ."'>\n";
+                        echo "<td><span class=\"text-light\"><img src='img/".$row["playerClass"].".png'> ".$row["name"]."</span></td>\n";
+                        $sql = "SELECT encounter_id, min(response) as response FROM raider_loot WHERE raider_id = ? AND response < ? GROUP BY encounter_id";
+                        $stmt = $dbConn->prepare($sql);
+                        $stmt->execute([$row["blizz_id"], LootResponse::DontNeed]);
+                        $result = $stmt->setFetchMode(PDO::FETCH_ASSOC);
+                        $bossResponses = $stmt->fetchAll();
+                        foreach($bossResponses as $r) {
+                            $symbol = "✔️";
+                            if (!is_null($r["response"])) {
+                                if ($r["response"] == LootResponse::Major || $r["response"] == LootResponse::Minor)
+                                    $symbol = "❌";
+                                else if ($r["response"] == LootResponse::Offspec)
+                                    $symbol = "⚠️";
                             }
-                            echo "<tr>\n";
-                            echo "<td><a class=\"text-light\" href=\"/profile.php?name=".$row["name"]."\"><img src='img/".$row["playerClass"].".png'> ".$row["name"]."</a></td>\n";
-                            echo "<td>".$row["neck_level"]."</td>\n";
-                            echo "<td>".$row["cape_level"]."</td>\n";
-                            echo "<td>".$weeklyKey."</td>\n";
+                            echo "<td><a href='boss.php?blizzId=". $row["blizz_id"] ."&bossId=". $r["boss_id"] ."' data-toggle='lightbox' data-gallery='remoteload' data-disable-external-check='true' data-width='800'>". $symbol ."</a></td>\n";
                         }
-                    ?>
-                </tbody>
-            </table>
+                        echo "</tr>\n";
+                    }
+                ?>
+            </tbody>
+        </table>
         </div>
         <script>
-        function customSort(sortName, sortOrder, data) {
-            var order = sortOrder === 'desc' ? -1 : 1
-            data.sort(function (a, b) {
-                var aa = a[sortName];
-                var bb = b[sortName];
-                if (sortName === 'name') {
-                    aa = $("<img>").html(aa).text();
-                    bb = $("<img>").html(bb).text();
-                }
-                else if (sortName === 'weekly-key') {
-                    aa = aa.replace(":(", "0 ");
-                    bb = bb.replace(":(", "0 ");
-                    aa = parseInt(aa.substring(0, aa.indexOf(" ")));
-                    bb = parseInt(bb.substring(0, bb.indexOf(" ")));
-                    //console.log(aa + " " + bb);
-                }
-                else if (sortName === 'cape-level') {
-                    aa = parseInt(aa);
-                    bb = parseInt(bb);
-                    //console.log(aa.toString() + " " + bb.toString());
-                }
-                if (aa < bb) {
-                    return order * -1
-                }
-                if (aa > bb) {
-                    return order
-                }
-                return 0
+            $(document).on('click', '[data-toggle="lightbox"]', function(event) {
+                event.preventDefault();
+                $(this).ekkoLightbox();
             });
-        }
+
+            $(document).ready(function() {
+                $('.toast').toast();
+            });
+
+            function customSort(sortName, sortOrder, data) {
+                var order = sortOrder === 'desc' ? -1 : 1
+                data.sort(function (a, b) {
+                    var aa = a[sortName];
+                    var bb = b[sortName];
+                    if (sortName === 'name') {
+                        aa = $("<img>").html(aa).text();
+                        bb = $("<img>").html(bb).text();
+                    }
+                    if (sortName.startsWith("boss")) {
+                        aa = $("<a>").html(aa).text();
+                        switch (aa) {
+                            case '✔️':
+                                aa = 3;
+                                break;
+                            case '⚠️':
+                                aa = 2;
+                                break;
+                            case '❌':
+                                aa = 1;
+                                break;
+                        }
+                        bb = $("<a>").html(bb).text();
+                        switch (bb) {
+                            case '✔️':
+                                bb = 3;
+                                break;
+                            case '⚠️':
+                                bb = 2;
+                                break;
+                            case '❌':
+                                bb = 1;
+                                break;
+                        }
+                    }
+                    if (aa < bb) {
+                        return order * -1
+                    }
+                    if (aa > bb) {
+                        return order
+                    }
+                    return 0
+                });
+            }
+
+            var closeBossWindow = function(name, bossNum, weight) {
+                let symbol = "✔️";
+                if (weight < <?php LootResponse::DontNeed ?>)
+                {
+                    symbol = "⚠️";
+                }
+                if (weight <= <?php LootResponse::Minor ?>)
+                {
+                    symbol = "❌";
+                }
+                bossNum += 1;
+                $("tr#" + name + " td:nth-child(" + bossNum + ") > a")[0].innerText = symbol;
+                $(".ekko-lightbox").modal('hide');
+            }
+
+            var successMsg = function(msg) {
+                $('.toast').toast('show')
+            }
         </script>
     </body>
 </html>
-
-<?php
-// close mysql connection
-$dbConn = null;
-?>

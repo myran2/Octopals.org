@@ -25,9 +25,6 @@ foreach($_POST as $key => $value)
         case "minor":
             $response = LootResponse::Minor;
             break;
-        case "socket":
-            $response = LootResponse::Socket;
-            break;
         case "offspec":
             $response = LootResponse::Offspec;
             break;

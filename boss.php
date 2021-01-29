@@ -1,6 +1,6 @@
 <?php
 require "database.php";
-include "gameData.php";
+include "constants.php";
 
 $blizzId = filter_input(INPUT_GET, 'blizzId', FILTER_SANITIZE_NUMBER_INT);
 $bossId = filter_input(INPUT_GET, 'bossId', FILTER_SANITIZE_NUMBER_INT);
@@ -71,7 +71,7 @@ $data = $stmt->fetchAll();
                                 <div class="row">
                                     <div class="col-sm">
                                         <?php
-                                            echo '<a href="#" data-wowhead="item='.$row["item_id"].'&amp;bonus=7187:'. $bonus_id .'"></a>'
+                                            echo '<a href="#" data-wowhead="item='.$row["item_id"].'&amp;bonus='. $MythicItemBossIds::CastleNathria .':'. $bonus_id .'"></a>'
                                         ?>
                                     </div>
                                     <div class="col-sm">
@@ -80,7 +80,6 @@ $data = $stmt->fetchAll();
                                             <option <?php echo $selected[LootResponse::DontNeed] ?> value="dont-need">Don't Need</option>
                                             <option <?php echo $selected[LootResponse::Major]; ?> value="major">Major Upgrade</option>
                                             <option <?php echo $selected[LootResponse::Minor]; ?> value="minor">Minor Upgrade</option>
-                                            <option <?php echo $selected[LootResponse::Socket]; ?> value="socket">Socket/Corruption</option>
                                             <option <?php echo $selected[LootResponse::Offspec]; ?> value="offspec">Offspec/M+/PvP</option>
                                         </select>
                                         </div>
@@ -108,19 +107,16 @@ $data = $stmt->fetchAll();
                     submitForm();
                     let weight = 5;
                     $("option:selected").each(function() {
-                        let curWeight = 5;
+                        let curWeight = LootResponse::DontNeed;
                         switch($(this).val()) {
                             case 'major':
-                                curWeight = 1;
+                                curWeight = LootResponse::Major;
                                 break;
                             case 'minor':
-                                curWeight = 2;
-                                break;
-                            case 'socket':
-                                curWeight = 3;
+                                curWeight = LootResponse::Minor;
                                 break;
                             case 'offspec':
-                                curWeight = 4;
+                                curWeight = LootResponse::Offspec;
                                 break;
                         }
                         if (curWeight < weight)
