@@ -95,14 +95,14 @@ $encounters = $stmt->fetchAll();
                         $sql = "SELECT 
                                     e.encounter_id, min(response) as response 
                                 FROM 
-                                    (SELECT encounter_id, `order` FROM encounter) AS e
-                                        LEFT JOIN 
-                                    raider_loot
-                                        ON e.encounter_id = raider_loot.encounter_id 
-                                GROUP BY e.encounter_id
+                                    encounter AS e
+                                    LEFT JOIN 
+                                    (SELECT * FROM raider_loot WHERE raider_id = ?) AS rl
+                                        ON e.encounter_id = rl.encounter_id 
+                                GROUP BY encounter_id
                                 ORDER BY e.`order`";
                         $stmt = $dbConn->prepare($sql);
-                        $stmt->execute([$row["blizz_id"], LootResponse::DontNeed]);
+                        $stmt->execute([$row["blizz_id"]]);
                         $result = $stmt->setFetchMode(PDO::FETCH_ASSOC);
                         $bossResponses = $stmt->fetchAll();
                         foreach($bossResponses as $r) {
@@ -178,16 +178,17 @@ $encounters = $stmt->fetchAll();
 
             var closeBossWindow = function(name, bossNum, weight) {
                 let symbol = "✔️";
-                if (weight < <?php LootResponse::DontNeed ?>)
+                if (weight < <?php echo LootResponse::DontNeed; ?>)
                 {
                     symbol = "⚠️";
                 }
-                if (weight <= <?php LootResponse::Minor ?>)
+                if (weight <= <?php echo LootResponse::Minor; ?>)
                 {
                     symbol = "❌";
                 }
-                bossNum += 1;
-                $("tr#" + name + " td:nth-child(" + bossNum + ") > a")[0].innerText = symbol;
+
+                let selector = "tr#" + name + " td:nth-child(" + (bossNum + 1) + ") a";
+                $(selector)[0].innerText = symbol;
                 $(".ekko-lightbox").modal('hide');
             }
 

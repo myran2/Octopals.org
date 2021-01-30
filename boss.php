@@ -8,7 +8,7 @@ if ($bossId == false || $bossId == NULL) {
     die ("No boss Id specified.");
 }
 
-$sql = "SELECT `name` FROM encounter WHERE encounter_id = ?";
+$sql = "SELECT `name`, `order` FROM encounter WHERE encounter_id = ?";
 $stmt = $dbConn->prepare($sql);
 $stmt->execute([$bossId]);
 $result = $stmt->setFetchMode(PDO::FETCH_ASSOC);
@@ -16,6 +16,7 @@ $data = $stmt->fetch();
 if ($data == false)
     die("Invalid boss Id.");
 $bossName = $data["name"];
+$bossOrder = $data["order"];
 
 $sql = "SELECT `name`, playerClass, playerRoles FROM raider WHERE blizz_id = ?";
 $stmt = $dbConn->prepare($sql);
@@ -29,12 +30,14 @@ $playerName = $data["name"];
 $classMask = $classIdToClassMask[$data["playerClass"]];
 
 // previous loot needs
-$sql = "SELECT bl.item_id, bonus_id, raider_id, response FROM (SELECT * from encounter_loot WHERE encounter_id = ? AND class_mask & ? = ?) AS bl left JOIN (SELECT * from raider_loot where raider_id = ?) as rl on rl.item_id = bl.item_id";
+$sql = "SELECT bl.item_id, bonus_id, raider_id, response FROM (SELECT * from encounter_loot WHERE encounter_id = ? AND (class_mask & ? > 0)) AS bl left JOIN (SELECT * from raider_loot where raider_id = ?) as rl on rl.item_id = bl.item_id";
 $stmt = $dbConn->prepare($sql);
-$stmt->execute([$bossId, $classMask, $classMask, $blizzId]);
+$params = [$bossId, $classMask, $blizzId];
+$stmt->execute($params);
 $result = $stmt->setFetchMode(PDO::FETCH_ASSOC);
 $data = $stmt->fetchAll();
 
+//echo interpolateQuery($sql, $params);
 
 ?>
 <html lang="en">
@@ -47,7 +50,7 @@ $data = $stmt->fetchAll();
         <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
         <script src="https://unpkg.com/bootstrap-table@1.15.5/dist/bootstrap-table.min.js"></script>
         <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
-        <script>var whTooltips = {colorLinks: true, iconizeLinks: true, renameLinks: true, iconSize: 'small'};</script>
+        <script>var whTooltips = {colorLinks: true, iconizeLinks: true, renameLinks: true, iconSize: 'medium'};</script>
         <script src="https://wow.zamimg.com/widgets/power.js"></script>
         <script type="text/javascript" src="/js/bossForm.js"></script>
     </head>
@@ -75,9 +78,8 @@ $data = $stmt->fetchAll();
                             <li class="list-group-item list-group-item-dark">
                                 <div class="row">
                                     <div class="col-sm">
-                                        <?php
-                                            echo '<a href="#" data-wowhead="item='.$row["item_id"].'&amp;bonus='. $MythicItemBossIds::CastleNathria .':'. $bonus_id .'"></a>'
-                                        ?>
+                                        <a href="#" data-wowhead="item=<?php echo $row["item_id"]; ?>&bonus=<?php echo MythicItemBonusIds::CastleNathria; ?>">
+                                        </a>
                                     </div>
                                     <div class="col-sm">
                                         <div class="form-group">
@@ -112,22 +114,22 @@ $data = $stmt->fetchAll();
                     submitForm();
                     let weight = 5;
                     $("option:selected").each(function() {
-                        let curWeight = LootResponse::DontNeed;
+                        let curWeight = <?php echo LootResponse::DontNeed; ?>;
                         switch($(this).val()) {
                             case 'major':
-                                curWeight = LootResponse::Major;
+                                curWeight = <?php echo LootResponse::Major; ?>;
                                 break;
                             case 'minor':
-                                curWeight = LootResponse::Minor;
+                                curWeight = <?php echo LootResponse::Minor; ?>;
                                 break;
                             case 'offspec':
-                                curWeight = LootResponse::Offspec;
+                                curWeight = <?php echo LootResponse::Offspec; ?>;
                                 break;
                         }
                         if (curWeight < weight)
                             weight = curWeight;
                     });
-                    window.parent.closeBossWindow("<?php echo $playerName; ?>", <?php echo $bossId; ?>, weight);
+                    window.parent.closeBossWindow("<?php echo $playerName; ?>", <?php echo $bossOrder; ?>, weight);
                     return false;
                 });
             });
