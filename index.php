@@ -2,7 +2,7 @@
 require "database.php";
 require "constants.php";
 
-$sql = "SELECT blizz_id, `name`, playerClass, playerRoles FROM raider";
+$sql = "SELECT blizz_id, `name`, playerClass, playerRoles FROM raider order by `name`";
 $stmt = $dbConn->prepare($sql);
 $stmt->execute();
 $result = $stmt->setFetchMode(PDO::FETCH_ASSOC);
@@ -108,10 +108,12 @@ $encounters = $stmt->fetchAll();
                         foreach($bossResponses as $r) {
                             $symbol = "✔️";
                             if (!is_null($r["response"])) {
-                                if ($r["response"] == LootResponse::Major || $r["response"] == LootResponse::Minor)
+                                if ($r["response"] == LootResponse::Major)
                                     $symbol = "❌";
-                                else if ($r["response"] == LootResponse::Offspec)
+                                else if ($r["response"] == LootResponse::Minor)
                                     $symbol = "⚠️";
+                                else if ($r["response"] == LootResponse::Offspec)
+                                    $symbol = "🔀";
                             }
                             echo "<td><a href='boss.php?blizzId=". $row["blizz_id"] ."&bossId=". $r["encounter_id"] ."' data-toggle='lightbox' data-gallery='remoteload' data-disable-external-check='true' data-width='800'>". $symbol ."</a></td>\n";
                         }
@@ -144,6 +146,9 @@ $encounters = $stmt->fetchAll();
                         aa = $("<a>").html(aa).text();
                         switch (aa) {
                             case '✔️':
+                                aa = 4;
+                                break;
+                            case '🔀':
                                 aa = 3;
                                 break;
                             case '⚠️':
@@ -156,7 +161,10 @@ $encounters = $stmt->fetchAll();
                         bb = $("<a>").html(bb).text();
                         switch (bb) {
                             case '✔️':
-                                bb = 3;
+                                bb = 4;
+                                break;
+                            case '🔀':
+                                aa = 3;
                                 break;
                             case '⚠️':
                                 bb = 2;
@@ -180,9 +188,13 @@ $encounters = $stmt->fetchAll();
                 let symbol = "✔️";
                 if (weight < <?php echo LootResponse::DontNeed; ?>)
                 {
+                    symbol = "🔀";
+                }
+                if (weight == <?php echo LootResponse::Minor; ?>)
+                {
                     symbol = "⚠️";
                 }
-                if (weight <= <?php echo LootResponse::Minor; ?>)
+                if (weight == <?php echo LootResponse::Major; ?>)
                 {
                     symbol = "❌";
                 }
