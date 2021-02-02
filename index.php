@@ -164,7 +164,7 @@ $encounters = $stmt->fetchAll();
                                 bb = 4;
                                 break;
                             case '🔀':
-                                aa = 3;
+                                bb = 3;
                                 break;
                             case '⚠️':
                                 bb = 2;
