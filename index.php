@@ -84,6 +84,8 @@ $encounters = $stmt->fetchAll();
                         foreach($encounters as $e) {
                             echo "<th data-sortable=\"true\" data-field=\"boss". $e["order"] ."\">". $e["name"] ."</th>\n";
                         }
+
+                        echo "<th data-sortable=\"true\" data-field=\"updated_at\">Updated</td>";
                     ?>
                 </tr>
             </thead>
@@ -93,7 +95,7 @@ $encounters = $stmt->fetchAll();
                         echo "<tr id='". $row["name"] ."'>\n";
                         echo "<td><span class=\"text-light\"><img src='img/".$row["playerClass"].".png'> ".$row["name"]."</span></td>\n";
                         $sql = "SELECT 
-                                    e.encounter_id, min(response) as response 
+                                    e.encounter_id, min(response) as response, max(updated_at) as updated_at
                                 FROM 
                                     encounter AS e
                                     LEFT JOIN 
@@ -105,6 +107,7 @@ $encounters = $stmt->fetchAll();
                         $stmt->execute([$row["blizz_id"]]);
                         $result = $stmt->setFetchMode(PDO::FETCH_ASSOC);
                         $bossResponses = $stmt->fetchAll();
+                        $updated_at = false;
                         foreach($bossResponses as $r) {
                             $symbol = "✔️";
                             if (!is_null($r["response"])) {
@@ -115,8 +118,15 @@ $encounters = $stmt->fetchAll();
                                 else if ($r["response"] == LootResponse::Offspec)
                                     $symbol = "🔀";
                             }
+                            if (!is_null($r["updated_at"]) && new DateTime($r['updated_at']) > $updated_at)
+                                $updated_at = new DateTime($r['updated_at']);
                             echo "<td><a href='boss.php?blizzId=". $row["blizz_id"] ."&bossId=". $r["encounter_id"] ."' data-toggle='lightbox' data-gallery='remoteload' data-disable-external-check='true' data-width='800'>". $symbol ."</a></td>\n";
                         }
+                        $updated_str = 'Never <img alt="madge" src="https://cdn.frankerfacez.com/emoticon/510861/1">';
+                        if ( $updated_at ) {
+                            $updated_str = $updated_at->format("m/d h:iA");
+                        }
+                        echo "<td>". $updated_str ."</td>";
                         echo "</tr>\n";
                     }
                 ?>

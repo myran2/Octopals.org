@@ -12,6 +12,7 @@ abstract class PlayerSpec {
     const Warlock = 0x200;
     const Priest = 0x400;
     const Mage = 0x800;
+    const Evoker = 0x1000;
 }
 
 abstract class PlayerRoles {
@@ -34,6 +35,7 @@ $classIdToClassMask = [
     10 => PlayerSpec::Monk,
     11 => PlayerSpec::Druid,
     12 => PlayerSpec::DemonHunter,
+    13 => PlayerSpec::Evoker,
 ];
 
 abstract class LootResponse {
@@ -45,7 +47,7 @@ abstract class LootResponse {
 }
 
 abstract class MythicItemBonusIds {
-    const CastleNathria = 7187;
+    const VaultOfTheIncarnates = '7977:8807';
 }
 
 ?>

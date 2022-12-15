@@ -78,7 +78,7 @@ $data = $stmt->fetchAll();
                             <li class="list-group-item list-group-item-dark">
                                 <div class="row">
                                     <div class="col-sm">
-                                        <a href="#" data-wowhead="item=<?php echo $row["item_id"]; ?>&bonus=<?php echo MythicItemBonusIds::CastleNathria; ?>">
+                                        <a href="#" data-wowhead="item=<?php echo $row["item_id"]; ?>&bonus=<?php echo MythicItemBonusIds::VaultOfTheIncarnates; ?>">
                                         </a>
                                     </div>
                                     <div class="col-sm">
