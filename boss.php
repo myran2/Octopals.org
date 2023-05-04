@@ -87,7 +87,7 @@ $data = $stmt->fetchAll();
                                             <option <?php echo $selected[LootResponse::DontNeed] ?> value="dont-need">Don't Need</option>
                                             <option <?php echo $selected[LootResponse::Major]; ?> value="major">Major Upgrade</option>
                                             <option <?php echo $selected[LootResponse::Minor]; ?> value="minor">Minor Upgrade</option>
-                                            <option <?php echo $selected[LootResponse::Offspec]; ?> value="offspec">Offspec/M+/PvP</option>
+                                            <option <?php echo $selected[LootResponse::Offspec]; ?> value="offspec">Offspec/M+/PvP/Transmog</option>
                                         </select>
                                         </div>
                                     </div>

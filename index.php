@@ -118,13 +118,13 @@ $encounters = $stmt->fetchAll();
                                 else if ($r["response"] == LootResponse::Offspec)
                                     $symbol = "🔀";
                             }
-                            if (!is_null($r["updated_at"]) && new DateTime($r['updated_at']) > $updated_at)
+                            if (!is_null($r["updated_at"]) && ((new DateTime($r['updated_at']) > $updated_at) || $updated_at === false))
                                 $updated_at = new DateTime($r['updated_at']);
                             echo "<td><a href='boss.php?blizzId=". $row["blizz_id"] ."&bossId=". $r["encounter_id"] ."' data-toggle='lightbox' data-gallery='remoteload' data-disable-external-check='true' data-width='800'>". $symbol ."</a></td>\n";
                         }
-                        $updated_str = 'Never <img alt="madge" src="https://cdn.frankerfacez.com/emoticon/510861/1">';
+                        $updated_str = 'Never! <img alt="madge" src="https://cdn.frankerfacez.com/emoticon/510861/1">';
                         if ( $updated_at ) {
-                            $updated_str = $updated_at->format("m/d h:iA");
+                        $updated_str = $updated_at->format("m/d/Y h:iA");
                         }
                         echo "<td>". $updated_str ."</td>";
                         echo "</tr>\n";
@@ -151,6 +151,12 @@ $encounters = $stmt->fetchAll();
                     if (sortName === 'name') {
                         aa = $("<img>").html(aa).text();
                         bb = $("<img>").html(bb).text();
+                    }
+                    if (sortName === 'updated_at') {
+                        const pattern = /(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2})([A|P]M)/;
+                        const aDate = new Date(aa.replace(pattern, '$3-$1-$2T$4:$5:00'));
+                        const bDate = new Date(bb.replace(pattern, '$3-$1-$2T$4:$5:00'));
+                        return order * (aDate - bDate);
                     }
                     if (sortName.startsWith("boss")) {
                         aa = $("<a>").html(aa).text();
